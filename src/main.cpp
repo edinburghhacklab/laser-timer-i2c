@@ -16,16 +16,25 @@
  */
 
 #include <Arduino.h>
+#include <hardware/i2c.h>
 
+#include "i2c.h"
 #include "laser.h"
 
 static constexpr unsigned int LASER_GPIO = 22;
 static constexpr bool LASER_ACTIVE_LOW = true;
+static constexpr uint8_t I2C_ADDRESS = 0x28;
 
 static LaserTime laser{LASER_GPIO, LASER_ACTIVE_LOW};
+static I2C i2c{
+	laser, I2C_ADDRESS, 100000,
+	PICO_DEFAULT_I2C_SDA_PIN /* 4 */,
+	PICO_DEFAULT_I2C_SCL_PIN /* 5 */
+};
 
 void setup() {
 	laser.start();
+	i2c.start();
 }
 
 void loop() {
@@ -33,6 +42,8 @@ void loop() {
 	Serial.print(LaserTime::uptime_us());
 	Serial.print(", laser: ");
 	laser.printTo(Serial);
+	Serial.print(", i2c: ");
+	i2c.printTo(Serial);
 	Serial.println("}");
 	sleep_ms(1000);
 }

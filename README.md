@@ -15,3 +15,14 @@ Monitor laser cutter runtime using a Raspberry Pi Pico.
 ## Hardware interface
 The state is monitored using GPIO 22 and the total runtime in microseconds is
 calculated while this pin is active.
+
+The I2C device uses the default SDA/SCL pins GP4/GP5 and has address 0x28,
+expecting to run at 100kHz.
+
+## I2C interface
+The laser runtime in microseconds is stored in a buffer which must be refreshed
+before reading.
+
+Write command byte 0x01 to refresh the cached value (and reset the read offset
+to the start of the buffer) and then read 8 bytes to get the value in
+little-endian byte order.

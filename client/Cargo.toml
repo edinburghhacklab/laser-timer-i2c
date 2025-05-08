@@ -1,0 +1,6 @@
+[package]
+name = "client"
+edition = "2024"
+
+[dependencies]
+ftdi-embedded-hal = { version = "0.23.1", features = ["ftdi", "ftdi-vendored"] }
