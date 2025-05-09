@@ -21,6 +21,8 @@
 #include <hardware/gpio.h>
 #include <hardware/i2c.h>
 
+#include <cppcrc.h>
+
 #include "laser.h"
 
 static I2C *instance = nullptr;
@@ -60,41 +62,55 @@ void I2C::start() {
 }
 
 inline void __not_in_flash_func(I2C::rx)(uint8_t data) {
+	uint64_t time;
+
 	switch (data) {
 	case I2C_CMD_READ_LASER_TIME_US: /* microseconds */
-		cmd_count_++;
-		value_ = laser_.laser_time_us();
+		time = laser_.laser_time_us();
+		value_len_ = 8;
 		break;
 
 	case I2C_CMD_READ_LASER_TIME_MS: /* milliseconds */
-		cmd_count_++;
-		value_ = laser_.laser_time_us() / 1000ULL;
+		time = laser_.laser_time_us() / 1000ULL;
+		value_len_ = 7;
 		break;
 
 	case I2C_CMD_READ_LASER_TIME_DS: /* deciseconds */
-		cmd_count_++;
-		value_ = laser_.laser_time_us() / 100000ULL;
+		time = laser_.laser_time_us() / 100000ULL;
+		value_len_ = 6;
 		break;
 
 	default:
 		unknown_count_++;
-		break;
+		return;
 	}
+
+	cmd_count_++;
+	static_assert(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__);
+	static_assert(sizeof(value_) == sizeof(time));
+	memcpy(value_, &time, sizeof(value_));
+	value_idx_ = 0;
+	crc_ = CRC8::ITU::null_crc;
 }
 
 inline uint8_t __not_in_flash_func(I2C::tx)() {
 	uint8_t data = 0;
 
-	if (value_ != UINT64_MAX) {
-		data = (uint8_t)(value_ & 0xFF);
-		value_ >>= 8;
+	if (value_idx_ < value_len_) {
+		data = value_[value_idx_++];
+		crc_ = CRC8::ITU::calc(&data, 1, crc_);
+	} else {
+		data = crc_;
+		crc_ = 0;
 	}
 
 	return data;
 }
 
 inline void __not_in_flash_func(I2C::reset)() {
-	value_ = UINT64_MAX;
+	value_idx_ = 0;
+	value_len_ = 0;
+	crc_ = 0;
 }
 
 void __not_in_flash_func(I2C::i2c_slave_irq_handler()) {

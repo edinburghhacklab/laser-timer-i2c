@@ -3,4 +3,5 @@ name = "client"
 edition = "2024"
 
 [dependencies]
+crc = "3.3.0"
 ftdi-embedded-hal = { version = "0.23.1", features = ["ftdi", "ftdi-vendored"] }

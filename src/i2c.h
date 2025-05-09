@@ -49,7 +49,10 @@ private:
     const unsigned int scl_;
     i2c_hw_t * const hw_;
 
-    uint64_t value_ = UINT64_MAX;
+    uint8_t value_[8];
+    uint8_t value_idx_ = 0;
+    uint8_t value_len_ = 0;
+    uint8_t crc_ = 0;
 
     unsigned long abort_count_ = 0;
     unsigned long start_count_ = 0;
