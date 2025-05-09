@@ -61,9 +61,19 @@ void I2C::start() {
 
 inline void __not_in_flash_func(I2C::rx)(uint8_t data) {
 	switch (data) {
-	case I2C_CMD_READ_LASER_TIME_US:
+	case I2C_CMD_READ_LASER_TIME_US: /* microseconds */
 		cmd_count_++;
 		value_ = laser_.laser_time_us();
+		break;
+
+	case I2C_CMD_READ_LASER_TIME_MS: /* milliseconds */
+		cmd_count_++;
+		value_ = laser_.laser_time_us() / 1000ULL;
+		break;
+
+	case I2C_CMD_READ_LASER_TIME_DS: /* deciseconds */
+		cmd_count_++;
+		value_ = laser_.laser_time_us() / 100000ULL;
 		break;
 
 	default:

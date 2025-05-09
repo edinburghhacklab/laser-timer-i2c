@@ -32,6 +32,8 @@ public:
 
 private:
     static constexpr uint8_t I2C_CMD_READ_LASER_TIME_US = 0x01;
+    static constexpr uint8_t I2C_CMD_READ_LASER_TIME_MS = 0x02;
+    static constexpr uint8_t I2C_CMD_READ_LASER_TIME_DS = 0x03;
 
     friend void __not_in_flash_func(c_i2c_slave_irq_handler)();
     void __not_in_flash_func(i2c_slave_irq_handler)();
