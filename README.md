@@ -22,11 +22,11 @@ expecting to run at 100kHz.
 ## I2C interface
 The laser runtime is stored in a buffer which must be refreshed before reading.
 
-Write a command byte to refresh the cached value (and reset the read offset
-to the start of the buffer) and then read 6-8 bytes to get the value in
+Write a command byte `0x01` to refresh the cached value (and reset the read
+offset to the start of the buffer) and then read 6-8 bytes to get the value in
 little-endian byte order.
 
 Different precision levels are available:
-* `0x01` microseconds (8 bytes)
-* `0x02` milliseconds (7 bytes)
-* `0x03` deciseconds (6 bytes)
+* `0x01`: microseconds (8 bytes)
+* `0x02`: milliseconds (7 bytes)
+* `0x03`: deciseconds (6 bytes)
