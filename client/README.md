@@ -17,7 +17,7 @@ FTDI FT232H, e.g. C232HM-DDHSL-0
 $ cargo run -r
     Finished `release` profile [optimized] target(s) in 0.02s
      Running `target/release/client`
-0x28 0x01 Ok(()) [109, 120, 229, 143, 0, 0, 0, 0] 2414180461µs
-0x28 0x02 Ok(()) [117, 214, 36, 0, 0, 0, 0, 0] 2414197ms
-0x28 0x03 Ok(()) [78, 94, 0, 0, 0, 0, 0, 0] 24142ds
+0x28 0x01 Ok(()) [16, 252, 23, 16, 0, 0, 0, 0] 270007312µs
+0x28 0x02 Ok(()) [201, 30, 4, 0, 0, 0, 0] 270025ms
+0x28 0x03 Ok(()) [140, 10, 0, 0, 0, 0] 2700ds
 ```
