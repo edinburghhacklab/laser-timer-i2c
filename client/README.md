@@ -7,7 +7,7 @@ Query the laser runtime in microseconds using I2C.
 Rust 1.85.0+
 
 ## Hardware interface
-FTDI FT232H, e.g. C232HM-DDHSL-0
+FTDI FT232H, e.g. C232HM-DDHSL-0 or C232HD-DDHSP-0
 
 ## Build
 `cargo build -r`
