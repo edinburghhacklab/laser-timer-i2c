@@ -31,12 +31,18 @@ public:
     size_t printTo(Print &p) const override;
 
 private:
-    static constexpr uint8_t I2C_CMD_READ_LASER_TIME_US = 0x01;
-    static constexpr uint8_t I2C_CMD_READ_LASER_TIME_MS = 0x02;
-    static constexpr uint8_t I2C_CMD_READ_LASER_TIME_DS = 0x03;
+    static constexpr uint8_t I2C_CMD_READ_TOTAL_TIME_US = 0x01;
+    static constexpr uint8_t I2C_CMD_READ_TOTAL_TIME_MS = 0x02;
+    static constexpr uint8_t I2C_CMD_READ_TOTAL_TIME_DS = 0x03;
 
-    friend void __not_in_flash_func(c_i2c_slave_irq_handler)();
-    void __not_in_flash_func(i2c_slave_irq_handler)();
+    static constexpr uint8_t I2C_CMD_READ_CURRENT_TIME_MASK = 0x0C;
+    static constexpr uint8_t I2C_CMD_READ_CURRENT_TIME_NONE = 0x00;
+    static constexpr uint8_t I2C_CMD_READ_CURRENT_TIME_U8_S = 0x04;
+    static constexpr uint8_t I2C_CMD_READ_CURRENT_TIME_U16_S = 0x08;
+    static constexpr uint8_t I2C_CMD_READ_CURRENT_TIME_U16_DS = 0x0C;
+
+    friend void __not_in_flash_func(c_i2c_target_irq_handler)();
+    void __not_in_flash_func(i2c_target_irq_handler)();
 
     void __not_in_flash_func(rx)(uint8_t data);
     uint8_t __not_in_flash_func(tx)();
@@ -49,7 +55,7 @@ private:
     const unsigned int scl_;
     i2c_hw_t * const hw_;
 
-    uint8_t value_[8];
+    uint8_t value_[10];
     uint8_t value_idx_ = 0;
     uint8_t value_len_ = 0;
     uint8_t crc_ = 0;

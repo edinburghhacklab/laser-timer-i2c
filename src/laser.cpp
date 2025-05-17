@@ -52,16 +52,22 @@ uint64_t __not_in_flash_func(LaserTime::uptime_us)() {
 	return to_us_since_boot(get_absolute_time());
 }
 
-uint64_t __not_in_flash_func(LaserTime::laser_time_us)() const {
+LaserStatus __not_in_flash_func(LaserTime::status)() const {
+	LaserStatus status;
 	auto saved_irq = spin_lock_blocking(lock_);
-	uint64_t time_us = time_count_us_;
+
+	status.total_time_us = time_count_us_;
+	status.on = on_;
 
 	if (on_) {
-		time_us += uptime_us() - start_us_;
+		status.current_time_us = uptime_us() - start_us_;
+		status.total_time_us += status.current_time_us;
+	} else {
+		status.current_time_us = 0;
 	}
 
 	spin_unlock(lock_, saved_irq);
-	return time_us;
+	return status;
 }
 
 void __not_in_flash_func(LaserTime::gpio_irq_handler)(unsigned int gpio, uint32_t event_mask) {
@@ -95,16 +101,19 @@ void __not_in_flash_func(LaserTime::gpio_irq_handler)(unsigned int gpio, uint32_
 }
 
 size_t LaserTime::printTo(Print &p) const {
+	LaserStatus status = this->status();
 	size_t len = 0;
 
 	len += p.print("{state: ");
-	len += p.print(on_);
+	len += p.print(status.on);
 	len += p.print(", changes: ");
 	len += p.print(gpio_change_count_);
 	len += p.print(", interrupts: ");
 	len += p.print(gpio_irq_count_);
-	len += p.print(", time_us: ");
-	len += p.print(laser_time_us());
+	len += p.print(", total_time_us: ");
+	len += p.print(status.total_time_us);
+	len += p.print(", current_time_us: ");
+	len += p.print(status.current_time_us);
 	len += p.print("}");
 
 	return len;

@@ -20,6 +20,12 @@
 #include <Arduino.h>
 #include <hardware/sync.h>
 
+struct LaserStatus {
+	uint64_t total_time_us;
+	uint64_t current_time_us;
+	bool on;
+};
+
 class LaserTime: public Printable {
 public:
 	LaserTime(unsigned int gpio, bool active_low);
@@ -27,7 +33,7 @@ public:
 	static uint64_t __not_in_flash_func(uptime_us)();
 
 	void start();
-	uint64_t __not_in_flash_func(laser_time_us)() const;
+	LaserStatus __not_in_flash_func(status)() const;
 	size_t printTo(Print &p) const override;
 
 private:

@@ -21,6 +21,8 @@
 #include <hardware/gpio.h>
 #include <hardware/i2c.h>
 
+#include <algorithm>
+
 #include <cppcrc.h>
 
 #include "laser.h"
@@ -33,8 +35,8 @@ I2C::I2C(LaserTime &laser, uint8_t address, unsigned int speed,
 
 }
 
-void __not_in_flash_func(c_i2c_slave_irq_handler)() {
-	instance->i2c_slave_irq_handler();
+void __not_in_flash_func(c_i2c_target_irq_handler)() {
+	instance->i2c_target_irq_handler();
 }
 
 void I2C::start() {
@@ -57,27 +59,31 @@ void I2C::start() {
 		| I2C_IC_INTR_MASK_M_START_DET_BITS;
 
 	instance = this;
-	irq_set_exclusive_handler(I2C0_IRQ, &c_i2c_slave_irq_handler);
+	irq_set_exclusive_handler(I2C0_IRQ, &c_i2c_target_irq_handler);
 	irq_set_enabled(I2C0_IRQ, true);
 }
 
 inline void __not_in_flash_func(I2C::rx)(uint8_t data) {
-	uint64_t time;
+	LaserStatus status = laser_.status();
+	uint64_t total_time;
+	size_t total_time_len;
+	uint16_t current_time;
+	size_t current_time_len;
 
-	switch (data) {
-	case I2C_CMD_READ_LASER_TIME_US: /* microseconds */
-		time = laser_.laser_time_us();
-		value_len_ = 8;
+	switch (data & ~I2C_CMD_READ_CURRENT_TIME_MASK) {
+	case I2C_CMD_READ_TOTAL_TIME_US: /* microseconds */
+		total_time = status.total_time_us;
+		total_time_len = 8;
 		break;
 
-	case I2C_CMD_READ_LASER_TIME_MS: /* milliseconds */
-		time = laser_.laser_time_us() / 1000ULL;
-		value_len_ = 7;
+	case I2C_CMD_READ_TOTAL_TIME_MS: /* milliseconds */
+		total_time = status.total_time_us / 1000ULL;
+		total_time_len = 7;
 		break;
 
-	case I2C_CMD_READ_LASER_TIME_DS: /* deciseconds */
-		time = laser_.laser_time_us() / 100000ULL;
-		value_len_ = 6;
+	case I2C_CMD_READ_TOTAL_TIME_DS: /* deciseconds */
+		total_time = status.total_time_us / 100000ULL;
+		total_time_len = 6;
 		break;
 
 	default:
@@ -85,10 +91,49 @@ inline void __not_in_flash_func(I2C::rx)(uint8_t data) {
 		return;
 	}
 
+	value_len_ = total_time_len;
+
+	switch (data & I2C_CMD_READ_CURRENT_TIME_MASK) {
+	case I2C_CMD_READ_CURRENT_TIME_NONE:
+		current_time_len = 0;
+		break;
+
+	case I2C_CMD_READ_CURRENT_TIME_U8_S: /* seconds (0-254) */
+		current_time = status.on ? std::min((uint64_t)(UINT8_MAX - 1),
+			status.current_time_us / 1000000ULL) : UINT8_MAX;
+		current_time_len = 1;
+		break;
+
+	case I2C_CMD_READ_CURRENT_TIME_U16_S: /* seconds (0-65535) */
+		current_time = status.on ? std::min((uint64_t)(UINT16_MAX - 1),
+			status.current_time_us / 1000000ULL) : UINT16_MAX;
+		current_time_len = 2;
+		break;
+
+	case I2C_CMD_READ_CURRENT_TIME_U16_DS: /* deciseconds (0-65535) */
+		current_time = status.on ? std::min((uint64_t)(UINT16_MAX - 1),
+			status.current_time_us / 100000ULL) : UINT16_MAX;
+		current_time_len = 2;
+		break;
+
+	default:
+		/* unreachable */
+		unknown_count_++;
+		return;
+	}
+
 	cmd_count_++;
+
 	static_assert(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__);
-	static_assert(sizeof(value_) == sizeof(time));
-	memcpy(value_, &time, sizeof(value_));
+	static_assert(sizeof(value_) >= sizeof(total_time));
+	memcpy(value_, &total_time, total_time_len);
+
+	while (current_time_len > 0) {
+		value_[value_len_++] = current_time;
+		current_time >>= 8;
+		current_time_len--;
+	}
+
 	value_idx_ = 0;
 	crc_ = CRC8::ITU::null_crc;
 }
@@ -113,7 +158,7 @@ inline void __not_in_flash_func(I2C::reset)() {
 	crc_ = 0;
 }
 
-void __not_in_flash_func(I2C::i2c_slave_irq_handler()) {
+void __not_in_flash_func(I2C::i2c_target_irq_handler()) {
 	uint32_t intr_stat = hw_->intr_stat;
 
 	if (intr_stat & I2C_IC_INTR_STAT_R_TX_ABRT_BITS) {
