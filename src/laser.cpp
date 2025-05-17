@@ -54,28 +54,30 @@ uint64_t __not_in_flash_func(LaserTime::uptime_us)() {
 
 LaserStatus __not_in_flash_func(LaserTime::status)() const {
 	LaserStatus status;
+	uint64_t start_us;
 	auto saved_irq = spin_lock_blocking(lock_);
 
+	start_us = start_us_;
 	status.total_time_us = time_count_us_;
 	status.on = on_;
+	spin_unlock(lock_, saved_irq);
 
-	if (on_) {
-		status.current_time_us = uptime_us() - start_us_;
+	if (status.on) {
+		status.current_time_us = uptime_us() - start_us;
 		status.total_time_us += status.current_time_us;
 	} else {
 		status.current_time_us = 0;
 	}
 
-	spin_unlock(lock_, saved_irq);
 	return status;
 }
 
 void __not_in_flash_func(LaserTime::gpio_irq_handler)(unsigned int gpio, uint32_t event_mask) {
 	if (gpio == gpio_) {
-		auto saved_irq = spin_lock_blocking(lock_);
 		uint64_t now_us = uptime_us();
 		bool raw_value = gpio_get(gpio);
 		bool value = raw_value ^ active_low_;
+		auto saved_irq = spin_lock_blocking(lock_);
 
 		if (on_ != value) {
 			if (on_) {
@@ -84,12 +86,15 @@ void __not_in_flash_func(LaserTime::gpio_irq_handler)(unsigned int gpio, uint32_
 
 			start_us_ = now_us;
 			on_ = value;
+			spin_unlock(lock_, saved_irq);
+
 			gpio_change_count_++;
 			gpio_put(LED_BUILTIN, on_);
+		} else {
+			spin_unlock(lock_, saved_irq);
 		}
 
 		gpio_irq_count_++;
-		spin_unlock(lock_, saved_irq);
 
 		gpio_set_irq_enabled(gpio,
 			raw_value ? GPIO_IRQ_LEVEL_HIGH : GPIO_IRQ_LEVEL_LOW, false);
