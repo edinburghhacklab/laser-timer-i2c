@@ -60,11 +60,6 @@ private:
     uint8_t value_len_ = 0;
     uint8_t crc_ = 0;
 
-    unsigned long abort_count_ = 0;
-    unsigned long start_count_ = 0;
-    unsigned long stop_count_ = 0;
-    unsigned long read_count_ = 0;
-    unsigned long unknown_count_ = 0;
-    unsigned long cmd_count_ = 0;
-    unsigned long write_count_ = 0;
+    unsigned long rx_count_ = 0;
+    unsigned long tx_count_ = 0;
 };

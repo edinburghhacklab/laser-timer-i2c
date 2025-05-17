@@ -18,6 +18,11 @@
 #include <Arduino.h>
 #include <hardware/i2c.h>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-qualifiers"
+#include <pico/multicore.h>
+#pragma GCC diagnostic pop
+
 #include "i2c.h"
 #include "laser.h"
 
@@ -35,7 +40,7 @@ static I2C i2c{
 
 void setup() {
 	laser.start();
-	i2c.start();
+	multicore_launch_core1([] { i2c.start(); });
 }
 
 void loop() {

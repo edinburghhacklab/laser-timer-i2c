@@ -87,7 +87,6 @@ inline void __not_in_flash_func(I2C::rx)(uint8_t data) {
 		break;
 
 	default:
-		unknown_count_++;
 		return;
 	}
 
@@ -118,11 +117,8 @@ inline void __not_in_flash_func(I2C::rx)(uint8_t data) {
 
 	default:
 		/* unreachable */
-		unknown_count_++;
 		return;
 	}
-
-	cmd_count_++;
 
 	static_assert(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__);
 	static_assert(sizeof(value_) >= sizeof(total_time));
@@ -162,50 +158,38 @@ void __not_in_flash_func(I2C::i2c_target_irq_handler()) {
 	uint32_t intr_stat = hw_->intr_stat;
 
 	if (intr_stat & I2C_IC_INTR_STAT_R_TX_ABRT_BITS) {
-		abort_count_++;
 		reset();
 		hw_->clr_tx_abrt;
 	}
 
+	/* Controller may start multiple times before stopping */
 	if (intr_stat & I2C_IC_INTR_STAT_R_START_DET_BITS) {
-		start_count_++;
 		hw_->clr_start_det;
 	}
 
-	if (intr_stat & I2C_IC_INTR_STAT_R_STOP_DET_BITS) {
-		stop_count_++;
-		hw_->clr_stop_det;
-	}
-
 	if (intr_stat & I2C_IC_INTR_STAT_R_RX_FULL_BITS) {
-		read_count_++;
 		rx(hw_->data_cmd);
+		rx_count_++;
 	}
 
 	if (intr_stat & I2C_IC_INTR_STAT_R_RD_REQ_BITS) {
-		write_count_++;
 		hw_->clr_rd_req;
 		hw_->data_cmd = tx();
+		tx_count_++;
+	}
+
+	if (intr_stat & I2C_IC_INTR_STAT_R_STOP_DET_BITS) {
+		hw_->clr_stop_det;
 	}
 }
 
 size_t I2C::printTo(Print &p) const {
 	size_t len = 0;
 
-	len += p.print("{abort: ");
-	len += p.print(abort_count_);
-	len += p.print(", start: ");
-	len += p.print(start_count_);
-	len += p.print(", stop: ");
-	len += p.print(stop_count_);
-	len += p.print(", read: ");
-	len += p.print(read_count_);
-	len += p.print(", cmd: ");
-	len += p.print(cmd_count_);
-	len += p.print(", unknown: ");
-	len += p.print(unknown_count_);
-	len += p.print(", write: ");
-	len += p.print(write_count_);
+	len += p.print("{rx: ");
+	len += p.print(rx_count_);
+	len += p.print(", tx: ");
+	len += p.print(tx_count_);
 	len += p.print("}");
 
 	return len;
