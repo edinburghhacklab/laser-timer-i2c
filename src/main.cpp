@@ -27,8 +27,7 @@
 #include "laser.h"
 
 static constexpr unsigned int LASER_GPIO = 22;
-//static constexpr bool LASER_ACTIVE_LOW = true; /* direct connection to laser signal */
-static constexpr bool LASER_ACTIVE_LOW = false; /* when using an optocoupler */
+static constexpr bool LASER_ACTIVE_LOW = true;
 static constexpr uint8_t I2C_ADDRESS = 0x28;
 
 static LaserTime laser{LASER_GPIO, LASER_ACTIVE_LOW};
